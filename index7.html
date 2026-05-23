@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>บ้านเตาถ่าน 3D Simulation (โหมดน้ำเต็มเขื่อน)</title>
+    <link rel="stylesheet" href="./style.css">
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <div id="blocker">
+      <div id="instructions">
+        <p style="font-size:36px; font-weight:bold; margin-bottom: 10px;">คลิกเพื่อเริ่ม (โหมดน้ำเต็มเขื่อน)</p>
+        <p style="font-size:18px; color:#ddd;">
+          เดิน/บิน: W, A, S, D<br/>
+          หันมุมกล้อง: ขยับเมาส์<br/>
+          เปลี่ยนโหมด (Walk / God Mode): กด G<br/>
+          บินขึ้น/ลง (ใน God Mode): Spacebar / Shift<br/>
+          เปิด/ปิดแผนที่ (Minimap): กด M<br/>
+          ออกจากเกม: กด ESC
+        </p>
+      </div>
+    </div>
+    
+    <div id="hud" style="position: absolute; top: 15px; left: 15px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-family: sans-serif; font-size: 18px; pointer-events: none; z-index: 5; display: none;">
+      <div id="coord-display">📍 Lat: -, Lon: -</div>
+      <div id="mode-display">🚶 Mode: Walk</div>
+    </div>
+    
+    <!-- Minimap Container -->
+    <div id="minimap-container" style="position: absolute; bottom: 20px; left: 20px; width: 300px; height: 200px; border: 3px solid rgba(255,255,255,0.7); border-radius: 8px; z-index: 5; display: block; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></div>
+    
+    <!-- Settings Panel -->
+    <div id="settings-panel" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; padding: 15px; border-radius: 8px; z-index: 10; font-family: sans-serif;">
+      <h3 style="margin-top: 0; font-size: 18px;">Settings</h3>
+      <label style="display:block; margin-bottom: 5px;">Graphics Quality</label>
+      <select id="quality-select" style="padding: 5px; width: 100%; font-size: 16px; cursor: pointer; margin-bottom: 15px;">
+        <option value="low">Low (Fast)</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High (Realistic)</option>
+      </select>
+      
+      <label style="display:block; margin-bottom: 5px;">Time of Day: <span id="time-display">10:00</span></label>
+      <input type="range" id="time-slider" min="6" max="18" step="0.1" value="10" style="width: 100%; cursor: pointer; margin-bottom: 15px;">
+      
+      <!-- ปุ่มสลับโหมดระดับน้ำลด -->
+      <div style="border-top: 1px solid rgba(255,255,255,0.3); padding-top: 15px;">
+        <button onclick="window.location.href='./index6.1.html'" style="width: 100%; padding: 10px; font-size: 14px; background: #6D4C41; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          🏜️ Mode น้ำลด
+        </button>
+      </div>
+    </div>
+    
+    <script type="module" src="./main7.js"></script>
+  </body>
+</html>
