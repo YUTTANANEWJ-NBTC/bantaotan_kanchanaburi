@@ -140,7 +140,7 @@ function initScene(demImage) {
     const imgData = ctx.getImageData(0, 0, 256, 256).data;
 
     const terrainWidth = 8058; // Expanded boundary based on user's polygon
-    const terrainHeight = 8272;
+    const terrainHeight = 12772;
     const segments = 255;
     const geometry = new THREE.PlaneGeometry(terrainWidth, terrainHeight, segments, segments);
     geometry.rotateX(-Math.PI / 2);

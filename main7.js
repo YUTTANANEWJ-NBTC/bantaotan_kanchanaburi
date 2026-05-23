@@ -25,13 +25,13 @@ function initScene(demImage) {
     minimap = L.map('minimap-container', {
         zoomControl: false,
         attributionControl: false
-    }).setView([14.655315, 98.576290], 14);
+    }).setView([14.676887, 98.585909], 14);
 
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17
     }).addTo(minimap);
 
-    mapMarker = L.marker([14.655315, 98.576290]).addTo(minimap);
+    mapMarker = L.marker([14.676887, 98.585909]).addTo(minimap);
 
     // Setup geographic to world coordinate converter
     function geographicToWorld(lat, lon) {
@@ -78,8 +78,8 @@ function initScene(demImage) {
     scene.fog = new THREE.FogExp2(0xcce0ff, 0.00012); // Reduced fog for clearer mountains
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 15000);
-    // Starting position for index7: Lat 14.655315, Lon 98.576290 under new Polygon scale
-    camera.position.set(-1989, 180, 5743);
+    // Starting position for index7: Lat 14.676887, Lon 98.585909 under new Polygon scale
+    camera.position.set(-953, 180, 3341);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -142,7 +142,7 @@ function initScene(demImage) {
     const imgData = ctx.getImageData(0, 0, 256, 256).data;
 
     const terrainWidth = 8058; // Expanded boundary based on user's polygon
-    const terrainHeight = 8272;
+    const terrainHeight = 12772;
     const segments = 255;
     const geometry = new THREE.PlaneGeometry(terrainWidth, terrainHeight, segments, segments);
     geometry.rotateX(-Math.PI / 2);
