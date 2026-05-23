@@ -14,7 +14,7 @@ let water, simpleWater, sky, sun, treeMesh;
 let terrain;
 
 const img = new Image();
-img.src = './dem.png'; // เปลี่ยนเป็นแบบสัมพัทธ์ (Relative path)
+img.src = './dem.png';
 img.onload = () => {
     initScene(img);
 };
@@ -24,13 +24,51 @@ function initScene(demImage) {
     minimap = L.map('minimap-container', {
         zoomControl: false,
         attributionControl: false
-    }).setView([14.673476, 98.587705], 14);
+    }).setView([14.669013, 98.587624], 14);
 
     L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17
     }).addTo(minimap);
 
-    mapMarker = L.marker([14.673476, 98.587705]).addTo(minimap);
+    mapMarker = L.marker([14.669013, 98.587624]).addTo(minimap);
+
+    // Setup geographic to world coordinate converter
+    function geographicToWorld(lat, lon) {
+        const latMin = 14.64953948678322;
+        const latMax = 14.72384152573632;
+        const lonMin = 98.55734883803055;
+        const lonMax = 98.63217402638114;
+        const terrainWidth = 8058;
+        const terrainHeight = 8272;
+
+        const x = ((lon - lonMin) / (lonMax - lonMin)) * terrainWidth - terrainWidth/2;
+        const z = terrainHeight/2 - ((lat - latMin) / (latMax - latMin)) * terrainHeight;
+        return { x, z };
+    }
+
+    // Teleport player when clicking on the Minimap (Only possible when unlocked with ESC)
+    minimap.on('click', function(e) {
+        const clickedLat = e.latlng.lat;
+        const clickedLng = e.latlng.lng;
+        
+        const worldPos = geographicToWorld(clickedLat, clickedLng);
+        
+        // Reset player velocity so they don't drift after teleporting
+        velocity.set(0, 0, 0);
+        
+        // Teleport camera object
+        const controlsObject = controls.getObject();
+        controlsObject.position.x = worldPos.x;
+        controlsObject.position.z = worldPos.z;
+        
+        // Adjust camera height according to ground height at new location
+        const groundHeight = getHeightAt(worldPos.x, worldPos.z);
+        controlsObject.position.y = groundHeight + 2;
+        
+        // Update marker position immediately
+        mapMarker.setLatLng([clickedLat, clickedLng]);
+        minimap.setView([clickedLat, clickedLng], minimap.getZoom(), { animate: false });
+    });
 
     // 1. Setup Scene, Camera, Renderer
     const scene = new THREE.Scene();
@@ -39,7 +77,7 @@ function initScene(demImage) {
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 15000);
     // Starting position: Lat 14.669013, Lon 98.587624
-    camera.position.set(-9, 180, 497);
+    camera.position.set(-769, 180, 1968);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -71,6 +109,7 @@ function initScene(demImage) {
     const outputPass = new OutputPass();
     composer.addPass(outputPass);
 
+    // Note: We attach composer to window so we can access it globally if needed, or just keep it in scope
     window.composer = composer;
     window.ssaoPass = ssaoPass;
     window.bloomPass = bloomPass;
@@ -100,9 +139,10 @@ function initScene(demImage) {
     ctx.drawImage(demImage, 0, 0);
     const imgData = ctx.getImageData(0, 0, 256, 256).data;
 
-    const terrainSize = 10000;
+    const terrainWidth = 8058; // Expanded boundary based on user's polygon
+    const terrainHeight = 8272;
     const segments = 255;
-    const geometry = new THREE.PlaneGeometry(terrainSize, terrainSize, segments, segments);
+    const geometry = new THREE.PlaneGeometry(terrainWidth, terrainHeight, segments, segments);
     geometry.rotateX(-Math.PI / 2);
 
     const colors = [];
@@ -112,8 +152,9 @@ function initScene(demImage) {
     const colorMud = new THREE.Color(0x6D4C41);
     const colorRock = new THREE.Color(0x757575);
     
-    const streamStart = new THREE.Vector3(420.53, 0, 1687.16);
-    const streamEnd = new THREE.Vector3(-73.76, 0, -1334.05);
+    // River path translated into the new Polygon bounding box coordinate scale
+    const streamStart = new THREE.Vector3(-339, 0, 3158);
+    const streamEnd = new THREE.Vector3(-834, 0, 135);
     const streamDir = new THREE.Vector3().subVectors(streamEnd, streamStart);
     const streamLenSq = streamDir.lengthSq();
     const rightVector = new THREE.Vector3(-streamDir.z, 0, streamDir.x).normalize();
@@ -136,7 +177,7 @@ function initScene(demImage) {
         const vx = vertices[i];
         const vz = vertices[i + 2];
         
-        // Carving the terrain for the stream
+        // 4. Integration: Carving the terrain for the stream
         const vToStart = new THREE.Vector3(vx - streamStart.x, 0, vz - streamStart.z);
         let t = vToStart.dot(streamDir) / streamLenSq;
         t = Math.max(0, Math.min(1, t));
@@ -152,15 +193,17 @@ function initScene(demImage) {
             if (distToRiver < 50) {
                 height = -10; // 100m wide deep river bed
             } else if (distToRiver < 70) {
+                // Steep inner bank (erosion cut)
                 const bankT = (distToRiver - 50) / 20;
                 height = -10 + bankT * 15;
             } else {
+                // Gentle outer bank slope
                 const outerT = (distToRiver - 70) / 70;
                 const smooth = outerT * outerT * (3.0 - 2.0 * outerT);
                 height = 5 + smooth * (height - 5);
             }
         } else if (height > 5) {
-            height += (Math.random() - 0.5) * 3;
+            height += (Math.random() - 0.5) * 3; // Micro-depressions
         }
 
         vertices[i + 1] = height;
@@ -202,6 +245,7 @@ function initScene(demImage) {
         flatShading: false
     });
 
+    // Procedural PBR and Splat Mapping via Shader
     material.onBeforeCompile = (shader) => {
         shader.vertexShader = shader.vertexShader.replace(
             '#include <common>',
@@ -279,17 +323,18 @@ function initScene(demImage) {
     sun = new THREE.Vector3();
     
     const skyUniforms = sky.material.uniforms;
-    skyUniforms['turbidity'].value = 0.5;
-    skyUniforms['rayleigh'].value = 1.5;
-    skyUniforms['mieCoefficient'].value = 0.005;
-    skyUniforms['mieDirectionalG'].value = 0.95;
+    skyUniforms['turbidity'].value = 0.5;      // Very low haze
+    skyUniforms['rayleigh'].value = 1.5;       // Normal blue scattering
+    skyUniforms['mieCoefficient'].value = 0.005; // Slightly more defined sun
+    skyUniforms['mieDirectionalG'].value = 0.95; // Tighter sun glow
 
     function updateSun(time) {
+        // time = 0-24
         const hourAngle = ((time - 12) / 12) * Math.PI; 
         const elevation = Math.cos(hourAngle) * (Math.PI / 2);
         
         const phi = Math.PI / 2 - elevation;
-        const theta = hourAngle + Math.PI;
+        const theta = hourAngle + Math.PI; // East to West
         
         sun.setFromSphericalCoords(1, phi, theta);
         sky.material.uniforms['sunPosition'].value.copy(sun);
@@ -301,10 +346,11 @@ function initScene(demImage) {
         dirLight.position.copy(sun).multiplyScalar(3000);
         
         let intensity = Math.max(0, Math.cos(hourAngle));
+        // เติมแสงทไวไลท์ตอนเช้ามืด/พลบค่ำ
         if (intensity === 0 && elevation > -0.2) intensity = 0.1; 
         
         dirLight.intensity = Math.max(0, intensity * 1.5);
-        ambientLight.intensity = Math.max(0.02, intensity * 0.4 + 0.02);
+        ambientLight.intensity = Math.max(0.02, intensity * 0.4 + 0.02); // กลางคืนสว่าง 0.02
         
         if (intensity > 0.2) {
             scene.background = new THREE.Color(0x87CEEB);
@@ -320,7 +366,7 @@ function initScene(demImage) {
         color: 0x226699, 
         transparent: true, opacity: 0.85, roughness: 0.1, metalness: 0.2
     });
-    const simpleWaterGeo = new THREE.PlaneGeometry(terrainSize, terrainSize);
+    const simpleWaterGeo = new THREE.PlaneGeometry(terrainWidth, terrainHeight);
     simpleWater = new THREE.Mesh(simpleWaterGeo, simpleWaterMat);
     simpleWater.rotation.x = -Math.PI / 2;
     simpleWater.position.y = -3;
@@ -337,9 +383,10 @@ function initScene(demImage) {
     
     const dummy = new THREE.Object3D();
     
+    // ฟังก์ชันคำนวณความสูงจากข้อมูล DEM โดยตรง (เร็วมาก ไม่ต้องใช้ Raycaster ที่กินสเปค)
     function getHeightAt(x, z) {
-        let px = Math.floor((x + terrainSize/2) / terrainSize * 255);
-        let pz = Math.floor((z + terrainSize/2) / terrainSize * 255);
+        let px = Math.floor((x + terrainWidth/2) / terrainWidth * 255);
+        let pz = Math.floor((z + terrainHeight/2) / terrainHeight * 255);
         if (px < 0) px = 0; if (px > 255) px = 255;
         if (pz < 0) pz = 0; if (pz > 255) pz = 255;
         
@@ -352,10 +399,11 @@ function initScene(demImage) {
         h -= 150; 
         h *= 3.0;
 
+        // Apply river carving logic so objects and camera don't float
         const distToRiver = getDistanceToRiver(x, z);
         if (distToRiver < 140) {
             if (distToRiver < 50) {
-                h = -10;
+                h = -10; // Deep river bed
             } else if (distToRiver < 70) {
                 const bankT = (distToRiver - 50) / 20;
                 h = -10 + bankT * 15;
@@ -369,10 +417,11 @@ function initScene(demImage) {
     }
     
     for (let i = 0; i < MAX_TREES; i++) {
-        const sx = (Math.random() - 0.5) * terrainSize;
-        const sz = (Math.random() - 0.5) * terrainSize;
+        const sx = (Math.random() - 0.5) * terrainWidth;
+        const sz = (Math.random() - 0.5) * terrainHeight;
         
         const h = getHeightAt(sx, sz);
+        // Ensure trees don't spawn in the river channel
         const distToRiver = getDistanceToRiver(sx, sz);
         
         if (h > 70 && h < 300 && distToRiver > 80) {
@@ -380,6 +429,7 @@ function initScene(demImage) {
             const s = 0.5 + Math.random() * 1.0;
             dummy.scale.set(s, s, s);
             
+            // เอียงต้นไม้เล็กน้อยให้เป็นธรรมชาติ
             dummy.rotation.x = (Math.random() - 0.5) * 0.2;
             dummy.rotation.z = (Math.random() - 0.5) * 0.2;
             
@@ -408,8 +458,8 @@ function initScene(demImage) {
     const stumpGeo = new THREE.CylinderGeometry(1.5, 2.5, 3.5, 8);
     const stumpMat = new THREE.MeshStandardMaterial({ color: 0x3E2723, roughness: 1.0 });
     for(let i = 0; i < 150; i++) {
-        const sx = (Math.random() - 0.5) * terrainSize * 0.3;
-        const sz = (Math.random() - 0.5) * terrainSize * 0.3;
+        const sx = (Math.random() - 0.5) * terrainWidth * 0.3;
+        const sz = (Math.random() - 0.5) * terrainHeight * 0.3;
         
         const h = getHeightAt(sx, sz);
         const distToRiver = getDistanceToRiver(sx, sz);
@@ -425,27 +475,31 @@ function initScene(demImage) {
     }
 
     // 6.5 Meandering Stream - Flat plane water at river level
-    const waterGeo = new THREE.PlaneGeometry(terrainSize, terrainSize);
+    // The terrain is carved to -10m depth. We place a large flat water plane at y=-3m.
+    // The carved banks (which rise above -3m) naturally contain the water inside the channel.
+    // This is how real games render rivers!
+    const waterGeo = new THREE.PlaneGeometry(terrainWidth, terrainHeight);
     const streamMesh = new Water(
         waterGeo,
         {
             textureWidth: 512,
             textureHeight: 512,
-            waterNormals: new THREE.TextureLoader().load('./waternormals.jpg', function (texture) { // เปลี่ยนเป็นแบบสัมพัทธ์ (Relative path)
+            waterNormals: new THREE.TextureLoader().load('./waternormals.jpg', function (texture) {
                 texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
             }),
             sunDirection: dirLight.position.clone().normalize(),
             sunColor: 0xffffff,
-            waterColor: 0x5C4033,
+            waterColor: 0x5C4033, // Muddy brown river water like the real photo
             distortionScale: 1.5,
             fog: scene.fog !== undefined,
             alpha: 0.9
         }
     );
     streamMesh.rotation.x = -Math.PI / 2;
-    streamMesh.position.y = -3;
+    streamMesh.position.y = -3; // Water surface at -3m, inside the -10m deep channel
     scene.add(streamMesh);
     
+    // Add water to variables for animation and time slider
     water = streamMesh;
 
     // 7. Settings Handlers
@@ -496,9 +550,11 @@ function initScene(demImage) {
             treeMesh.count = MAX_TREES;
         }
         
+        // Update background based on current time since sky might be disabled
         updateSun(parseFloat(document.getElementById('time-slider').value));
     }
     
+    // Set initial quality and time
     applyQualitySettings('medium');
 
     // 8. Controls
@@ -551,9 +607,9 @@ function initScene(demImage) {
             case 'ShiftRight': moveDown = true; break;
             case 'KeyG': 
                 if (controls.isLocked) {
-                    godMode = !godMode; 
-                    modeDisplay.innerText = godMode ? '👼 Mode: God (Flying)' : '🚶 Mode: Walk';
-                    if (!godMode) velocity.y = 0;
+                     godMode = !godMode; 
+                     modeDisplay.innerText = godMode ? '👼 Mode: God (Flying)' : '🚶 Mode: Walk';
+                     if (!godMode) velocity.y = 0;
                 }
                 break;
             case 'KeyM':
@@ -617,6 +673,7 @@ function initScene(demImage) {
         requestAnimationFrame(animate);
         const time = performance.now();
         
+        // Update Water Animation
         if (water && water.material && water.material.uniforms && water.material.uniforms['time']) {
             water.material.uniforms['time'].value += 1.0 / 60.0;
         }
@@ -672,8 +729,15 @@ function initScene(demImage) {
                 if (!godMode) camPos.y = Math.max(camPos.y, 2);
             }
             
-            const currentLat = 14.673476 - (camPos.z / 111320); 
-            const currentLon = 98.587705 + (camPos.x / 107690); 
+            const latMin = 14.64953948678322;
+            const latMax = 14.72384152573632;
+            const lonMin = 98.55734883803055;
+            const lonMax = 98.63217402638114;
+            const terrainWidth = 8058;
+            const terrainHeight = 8272;
+
+            const currentLon = lonMin + ((camPos.x + terrainWidth/2) / terrainWidth) * (lonMax - lonMin);
+            const currentLat = latMax - ((camPos.z + terrainHeight/2) / terrainHeight) * (latMax - latMin); 
             
             coordDisplay.innerText = `📍 Lat: ${currentLat.toFixed(6)}, Lon: ${currentLon.toFixed(6)} | Alt: ${Math.floor(camPos.y)}m`;
             
