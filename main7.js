@@ -36,11 +36,11 @@ function initScene(demImage) {
     // Setup geographic to world coordinate converter
     function geographicToWorld(lat, lon) {
         const latMin = 14.64953948678322;
-        const latMax = 14.72384152573632;
+        const latMax = 14.76426;
         const lonMin = 98.55734883803055;
         const lonMax = 98.63217402638114;
         const terrainWidth = 8058;
-        const terrainHeight = 8272;
+        const terrainHeight = 12772;
 
         const x = ((lon - lonMin) / (lonMax - lonMin)) * terrainWidth - terrainWidth/2;
         const z = terrainHeight/2 - ((lat - latMin) / (latMax - latMin)) * terrainHeight;
@@ -79,7 +79,7 @@ function initScene(demImage) {
 
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 15000);
     // Starting position for index7: Lat 14.655315, Lon 98.576290 under new Polygon scale
-    camera.position.set(-1989, 180, 3493);
+    camera.position.set(-1989, 180, 5743);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -155,8 +155,8 @@ function initScene(demImage) {
     const colorRock = new THREE.Color(0x757575);
     
     // River path translated into the new Polygon bounding box coordinate scale
-    const streamStart = new THREE.Vector3(-339, 0, 3158);
-    const streamEnd = new THREE.Vector3(-834, 0, 135);
+    const streamStart = new THREE.Vector3(-339, 0, 5408);
+    const streamEnd = new THREE.Vector3(-834, 0, 2387);
     const streamDir = new THREE.Vector3().subVectors(streamEnd, streamStart);
     const streamLenSq = streamDir.lengthSq();
     const rightVector = new THREE.Vector3(-streamDir.z, 0, streamDir.x).normalize();
@@ -732,11 +732,11 @@ function initScene(demImage) {
             }
             
             const latMin = 14.64953948678322;
-            const latMax = 14.72384152573632;
+            const latMax = 14.76426;
             const lonMin = 98.55734883803055;
             const lonMax = 98.63217402638114;
             const terrainWidth = 8058;
-            const terrainHeight = 8272;
+            const terrainHeight = 12772;
 
             const currentLon = lonMin + ((camPos.x + terrainWidth/2) / terrainWidth) * (lonMax - lonMin);
             const currentLat = latMax - ((camPos.z + terrainHeight/2) / terrainHeight) * (latMax - latMin); 
