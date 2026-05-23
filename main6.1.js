@@ -562,6 +562,28 @@ function initScene(demImage) {
                     mContainer.style.display = mContainer.style.display === 'none' ? 'block' : 'none';
                 }
                 break;
+            case 'KeyQ':
+            case 'BracketLeft':
+            case 'Minus':
+                if (controls.isLocked) {
+                    const timeSlider = document.getElementById('time-slider');
+                    let val = parseFloat(timeSlider.value) - 0.2;
+                    if (val < 6) val = 18;
+                    timeSlider.value = val;
+                    timeSlider.dispatchEvent(new Event('input'));
+                }
+                break;
+            case 'KeyE':
+            case 'BracketRight':
+            case 'Equal':
+                if (controls.isLocked) {
+                    const timeSlider = document.getElementById('time-slider');
+                    let val = parseFloat(timeSlider.value) + 0.2;
+                    if (val > 18) val = 6;
+                    timeSlider.value = val;
+                    timeSlider.dispatchEvent(new Event('input'));
+                }
+                break;
         }
     });
 

@@ -10,6 +10,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   </head>
   <body>
+    <!-- Project Title Header -->
+    <div style="position: absolute; top: 15px; left: 15px; color: white; text-shadow: 2px 2px 5px rgba(0,0,0,0.9); font-family: 'Kanit', sans-serif; z-index: 5; pointer-events: none;">
+      <h1 style="margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 0.5px;">มุมลับบ้านเตาถ่าน ทองผาภูมิ</h1>
+      <h2 style="margin: 0; font-size: 14px; font-weight: 300; color: #ddd; letter-spacing: 1px;">SIMULATION PROJECT</h2>
+    </div>
+
     <div id="blocker">
       <div id="instructions">
         <p style="font-size:36px; font-weight:bold; margin-bottom: 10px;">คลิกเพื่อเริ่ม (โหมดน้ำเต็มเขื่อน)</p>
@@ -18,17 +24,23 @@
           หันมุมกล้อง: ขยับเมาส์<br/>
           เปลี่ยนโหมด (Walk / God Mode): กด G<br/>
           บินขึ้น/ลง (ใน God Mode): Spacebar / Shift<br/>
+          ปรับเวลาด่วน (Time of Day): กด Q / E (หรือ [ / ])<br/>
           เปิด/ปิดแผนที่ (Minimap): กด M<br/>
           ออกจากเกม: กด ESC
         </p>
       </div>
     </div>
     
-    <div id="hud" style="position: absolute; top: 15px; left: 15px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-family: sans-serif; font-size: 18px; pointer-events: none; z-index: 5; display: none;">
+    <div id="hud" style="position: absolute; top: 85px; left: 15px; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); font-family: sans-serif; font-size: 18px; pointer-events: none; z-index: 5; display: none;">
       <div id="coord-display">📍 Lat: -, Lon: -</div>
       <div id="mode-display">🚶 Mode: Walk</div>
     </div>
     
+    <!-- Last Version Updated Badge -->
+    <div style="position: absolute; bottom: 230px; left: 20px; background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.7); padding: 5px 10px; border-radius: 4px; font-family: sans-serif; font-size: 12px; z-index: 5; pointer-events: none; border: 1px solid rgba(255,255,255,0.2);">
+      Last version updated 23 May 2026 16:42
+    </div>
+
     <!-- Minimap Container -->
     <div id="minimap-container" style="position: absolute; bottom: 20px; left: 20px; width: 300px; height: 200px; border: 3px solid rgba(255,255,255,0.7); border-radius: 8px; z-index: 5; display: block; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></div>
     
