@@ -10,7 +10,9 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),      // ทางเข้าหลัก (Mode น้ำลด)
         lowWater: resolve(__dirname, 'index6.1.html'), // โหมดน้ำลดสำรอง
-        fullWater: resolve(__dirname, 'index7.html')   // โหมดน้ำเต็มเขื่อน (สำคัญ!)
+        fullWater: resolve(__dirname, 'index7.html'),   // โหมดน้ำเต็มเขื่อน
+        osmLowWater: resolve(__dirname, 'index8.1.html'), // ใหม่! โหมดน้ำลด OpenStreetMap Bounding Box
+        osmFullWater: resolve(__dirname, 'index8.2.html') // ใหม่! โหมดน้ำเต็มเขื่อน OpenStreetMap Bounding Box
       }
     }
   }
